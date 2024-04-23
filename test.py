@@ -1,7 +1,5 @@
 import chess
 import chess.engine
-from chess.engine import Cp
-import math
 
 def start_game(board):
     print(board)
@@ -34,30 +32,56 @@ def start_game(board):
                 print("invalid move") """
 
 def computer_move(board):
-    depth = 3
-    alpha = -math.inf
-    beta = math.inf
-    miniMax(board, depth, alpha, beta)
+    depth = 1
+    alpha = float("-inf")
+    beta = float("inf")
+    move, score = miniMax(board, depth, alpha, beta)
+    board.push(move)
+    print(board)
+    print(score)
+
 
 def miniMax(board, depth, alpha, beta):
-    if depth == 0:
-        return evaluation(board)
+    if depth == 0 or board.is_game_over():
+        return None, evaluation(board)
     
-    scores = []
-    for move in board.legal_moves:
-        board.push(move)
-        scores.append(miniMax(board, depth - 1, alpha, beta))
-        board.pop()
-    
-    return max(scores) if board.turn == chess.WHITE else min(scores)
+    best_move = None
+    if board.turn == chess.WHITE:
+        max_score = float("-inf")
+        for move in board.legal_moves:
+            board.push(move)
+            _, score = miniMax(board, depth - 1, alpha, beta)
+            board.pop()
+            if score > max_score:
+                max_score = score
+                best_move = move
+            alpha = max(alpha, max_score)
+            if alpha >= beta:
+                break
+        return best_move, max_score
+    else:
+        min_score = float("inf")
+        for move in board.legal_moves:
+            board.push(move)
+            _, score = miniMax(board, depth - 1, alpha, beta)
+            board.pop()
+            if score < min_score:
+                min_score = score
+                best_move = move
+            beta = min(beta, min_score)
+            if beta <= alpha:
+                break
+        return best_move, min_score
     
 def evaluation(board, time_limit = 0.01):
     engine = chess.engine.SimpleEngine.popen_uci("stockfish\stockfish-windows-x86-64-avx2.exe")
     result = engine.analyse(board, chess.engine.Limit(time = time_limit))
     score = result['score'].relative.score()
     if board.turn == chess.WHITE:
+        print(score, end=" ")
         return score
     else:
+        print(score, end=" ")
         return -score
 
 def main():
@@ -65,6 +89,3 @@ def main():
     start_game(board)
 
 main()
-        
-
-    
