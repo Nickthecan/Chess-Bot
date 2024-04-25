@@ -1,5 +1,8 @@
 import chess
 import chess.engine
+import torch
+import torch.nn as nn
+import torch.optim as optim
 
 def start_game(board):
     print(board)
@@ -78,10 +81,8 @@ def evaluation(board, time_limit = 0.01):
     result = engine.analyse(board, chess.engine.Limit(time = time_limit))
     score = result['score'].relative.score()
     if board.turn == chess.WHITE:
-        print(score, end=" ")
         return score
     else:
-        print(score, end=" ")
         return -score
 
 def main():
