@@ -7,10 +7,8 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
 import numpy as np
+
 
 def tree_graph_to_png(tree, feature_names, png_file_to_save):
     tree_str = export_graphviz(tree, feature_names=feature_names,
@@ -38,5 +36,5 @@ dt.fit(X_train, y_train)
 tree_graph_to_png(dt, feature_names=['A', 'B'], png_file_to_save='dt.png')
 X_test
 y_test
-dt.predict(X_test)
+print(dt.predict(X_test))
 
