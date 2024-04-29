@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-squares_index = {
+""" squares_index = {
     'a': 0,
     'b': 1,
     'c': 2,
@@ -14,11 +14,28 @@ squares_index = {
     'f': 5,
     'g': 6,
     'h': 7,   
+}"""
+
+chess_dict = {
+    'p' : [1,0,0,0,0,0,0,0,0,0,0,0],
+    'P' : [0,0,0,0,0,0,1,0,0,0,0,0],
+    'n' : [0,1,0,0,0,0,0,0,0,0,0,0],
+    'N' : [0,0,0,0,0,0,0,1,0,0,0,0],
+    'b' : [0,0,1,0,0,0,0,0,0,0,0,0],
+    'B' : [0,0,0,0,0,0,0,0,1,0,0,0],
+    'r' : [0,0,0,1,0,0,0,0,0,0,0,0],
+    'R' : [0,0,0,0,0,0,0,0,0,1,0,0],
+    'q' : [0,0,0,0,1,0,0,0,0,0,0,0],
+    'Q' : [0,0,0,0,0,0,0,0,0,0,1,0],
+    'k' : [0,0,0,0,0,1,0,0,0,0,0,0],
+    'K' : [0,0,0,0,0,0,0,0,0,0,0,1],
+    '.' : [0,0,0,0,0,0,0,0,0,0,0,0],
 }
 
-def square_to_index(square):
+
+"""def square_to_index(square):
     letter = chess.square_name(square)
-    return 8 - int(letter[1]), squares_index[letter[0]]
+    return 8 - int(letter[1]), squares_index[letter[0]] """
 
 #turns the board into a 3d matrix for funsies. But in actualkty it will be better for the neural network model to read
 """ ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⣀⣀⣀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -44,7 +61,7 @@ def square_to_index(square):
 ⠀⠀⠙⢿⣿⣷⣤⡄⢀⠈⠙⣧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣾⠏⠀⣰⠏⡴⠃⠀
 ⠀⠀⠀⠀⠙⠻⠿⣿⣿⣿⡿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣴⡿⡁⢂⣴⣯⠞⠁⠀⠀
 ⠀⠀⠀⠀⠀⢀⣀⣀⢀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠛⠷⣷⡿⠟⠁⠀⠀⠀⠀ """
-def split_dimensions(board):
+""" def split_dimensions(board):
     board3d = numpy.zeros((14, 8, 8), dtype=numpy.int8)
     for piece in chess.PIECE_TYPES:
         for square in board.pieces(square, chess.WHITE):
@@ -65,13 +82,37 @@ def split_dimensions(board):
         board3d[13][i][j] = 1
     board.turn = who_going
 
-    return board3d
+    return board3d """
 
 
+def create_matrix(board):
+    pgn = board.epd()
+    board_array = []
+    pieces = pgn.split(" ", 1)[0]
+    rows = pieces.split("/")
+    for row in rows:
+        another_board_array = []
+        for i in row:
+            if i.isdigit():
+                for j in range(0, int(i)):
+                    another_board_array.append('.')
+            else:
+                    another_board_array.append(i)
+        board_array.append(another_board_array)
+    return board_array
+
+def translate(matrix, chess_dict):
+    rows = []
+    for row in matrix:
+        terms = []
+        for term in row:
+            terms.append(chess_dict[term])
+        rows.append(terms)
+    return rows
 
 def start_game(board):
     print(board)
-    print(split_dimensions(board))
+    #print(split_dimensions(board))
 
     while not board.is_game_over():
         if board.turn == chess.WHITE:
@@ -151,9 +192,6 @@ def evaluation(board, time_limit = 0.01):
     else:
         return -score
     
-
-
-
 def main():
     board = chess.Board()
     start_game(board)

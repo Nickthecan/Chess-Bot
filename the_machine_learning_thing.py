@@ -16,6 +16,12 @@ from sklearn.ensemble import RandomForestRegressor
 import numpy as np
 import ast
 
+""" NOTES """
+# X is going to be the board position
+# y is going to be the evaluation of the board position
+# use X and y in the model in order to train and let the model understand board positions and their values
+
+
 """ loading the database pgn of games from march 2014 to a .csv file """
 #NUM_GAMES = 795173
 #rows = []
@@ -50,4 +56,30 @@ import ast
 #
 #df.to_csv("data/filtered_games.csv", index=False)
 
+
+
+def cweate_dataset_uwu(df):
+    for i in range(len(df)):
+        row = df.iloc[i]
+        moves = ast.literal_eval(row['moves'])
+        game = chess.pgn.Game()
+        board = chess.Board()
+        for move in moves:
+            board.push_uci(move)
+            game.add_main_variation(chess.Move.from_uci(board.peek().uci()))
+        X.append(game)
+    
+    print("done")
+    print(len(X))
+
+
+
+df = pd.read_csv('data/filtered_games.csv')
+
+X = []
+y = []
+
+cweate_dataset_uwu(df)
+
+         
 
