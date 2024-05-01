@@ -1,4 +1,6 @@
 import chess.pgn
+import chess
+import chess.engine
 import tqdm
 import pandas as pd
 pd.options.display.max_columns = 999
@@ -15,12 +17,21 @@ from sklearn.metrics import accuracy_score
 from sklearn.ensemble import RandomForestRegressor
 import numpy as np
 import ast
-
+import json 
+import random
 """ NOTES """
 # X is going to be the board position
 # y is going to be the evaluation of the board position
 # use X and y in the model in order to train and let the model understand board positions and their values
 
+# From Jacob
+# btw for like an ANN, in super basic terms think of each like square on a chess board as a variable and you input those 64 squares as numerical values 
+# and the machine learning model does some sort formula on each square and comes up with an answer (for example, the evlauation) 
+# then, it compares it with the actual value and then tweaks all of those equations it used, and just does this like a bunch of times 
+# and it just tries to get the minimum error across your entire dataset
+# when you train a model, you actually give it the input (chess board position) and the output (actual evaluation)
+# while training, the model needs the actual evaluations to check if it's predicted ones are close to the actual value
+# at first, it's not close at all, since it's basically just putting random equations and hoping it works
 
 """ loading the database pgn of games from march 2014 to a .csv file """
 #NUM_GAMES = 795173
@@ -58,28 +69,78 @@ import ast
 
 
 
-def cweate_dataset_uwu(df):
-    for i in range(len(df)):
-        row = df.iloc[i]
-        moves = ast.literal_eval(row['moves'])
-        game = chess.pgn.Game()
-        board = chess.Board()
-        for move in moves:
-            board.push_uci(move)
-            game.add_main_variation(chess.Move.from_uci(board.peek().uci()))
-        X.append(game)
+#def cweate_dataset_uwu(df):
+#    row = df.iloc[0]
+#    moves = ast.literal_eval(row['moves'])
+#    game = chess.pgn.Game()
+#    board = chess.Board()
+#    for move in moves:
+#        board.push_uci(move)
+#        game.add_main_variation(chess.Move.from_uci(board.peek().uci()))
+#        X.append(board.copy())
+#    print("done")
+
+
+""" find all the FEN positions in the json file """
+def populate_position_dataset(json_file):
+    for i in range(10000):
+        line = json_file.readline()
+        block = json.loads(line)
+        fen = block["fen"]
+        X.append(fen)
+    print("positions done")
+
+""" finds the best move in the position with the corresponding evaluation """
+def populate_evaluation_dataset(json_file):
+    for i in range(10000):
+        different_position_for_evaluation = {}
+        line = json_file.readline()
+        block = json.loads(line)
+
+        highest_depth = 0
+        cp = 0
+        best_move = ""
+        for evaluation in block['evals']:
+            for pv in evaluation['pvs']:
+                if 'cp' in pv:
+                    if evaluation['depth'] > highest_depth:
+                        highest_depth = evaluation['depth']
+                        cp = pv['cp']
+                        best_move = pv['line'].split()[0]
+            different_position_for_evaluation = {cp, best_move}
+        y.append(different_position_for_evaluation)
+                
+        
+
+
+""" this will be the supervised learning to check the actual evaluation """ 
+
+def evaluation(board, time_limit = 0.01):
+    engine = chess.engine.SimpleEngine.popen_uci("stockfish/stockfish-windows-x86-64-avx2.exe")
+    result = engine.analyse(board, chess.engine.Limit(time = time_limit))
+    score = result['score'].relative.score()
+    if result is not None:
+        """ if board.turn == chess.WHITE:
+            return score
+        else:
+            return -score """
+        return score
+    else:
+        return 0
     
-    print("done")
-    print(len(X))
 
-
-
-df = pd.read_csv('data/filtered_games.csv')
+#start of the program
 
 X = []
 y = []
 
-cweate_dataset_uwu(df)
+with open("data/lichess_db_eval.jsonl", 'r') as json_file:
+    populate_position_dataset(json_file)
+    json_file.seek(0)
+    populate_evaluation_dataset(json_file)
 
+print(X[8])
+print(y[8])
+print(len(X), len(y))
          
 
