@@ -1,4 +1,4 @@
-import chess
+import chess_game
 import chess.engine
 import numpy
 import torch
@@ -115,10 +115,10 @@ def start_game(board):
     #print(split_dimensions(board))
 
     while not board.is_game_over():
-        if board.turn == chess.WHITE:
+        if board.turn == chess_game.WHITE:
             player_move = input("pick a move (ex: e2e4): ")
             try:
-                move = chess.Move.from_uci(player_move)
+                move = chess_game.Move.from_uci(player_move)
                 if move in board.legal_moves:
                     board.push(move)
                     print(board)
@@ -156,7 +156,7 @@ def miniMax(board, depth, alpha, beta):
         return None, evaluation(board)
     
     best_move = None
-    if board.turn == chess.WHITE:
+    if board.turn == chess_game.WHITE:
         max_score = float("-inf")
         for move in board.legal_moves:
             board.push(move)
@@ -184,16 +184,16 @@ def miniMax(board, depth, alpha, beta):
         return best_move, min_score
     
 def evaluation(board, time_limit = 0.01):
-    engine = chess.engine.SimpleEngine.popen_uci("stockfish/stockfish-windows-x86-64-avx2.exe")
-    result = engine.analyse(board, chess.engine.Limit(time = time_limit))
+    engine = chess_game.engine.SimpleEngine.popen_uci("stockfish/stockfish-windows-x86-64-avx2.exe")
+    result = engine.analyse(board, chess_game.engine.Limit(time = time_limit))
     score = result['score'].relative.score()
-    if board.turn == chess.WHITE:
+    if board.turn == chess_game.WHITE:
         return score
     else:
         return -score
     
 def main():
-    board = chess.Board()
+    board = chess_game.Board()
     start_game(board)
 
 main()

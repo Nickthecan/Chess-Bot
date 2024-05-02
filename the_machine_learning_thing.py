@@ -1,12 +1,11 @@
 import chess.pgn
-import chess
+import chess_game
 import chess.engine
+import keras
 import tqdm
 import pandas as pd
 pd.options.display.max_columns = 999
 import datetime
-import zipfile
-import pandas as pd
 import pydotplus
 from sklearn.tree import export_graphviz
 from sklearn.tree import DecisionTreeClassifier
@@ -19,6 +18,10 @@ import numpy as np
 import ast
 import json 
 import random
+import tensorflow as tf
+from tensorflow.keras.models import Sequential, load_model
+from tensorflow.keras.layers import Dense
+from sklearn.metrics import accuracy_score
 """ NOTES """
 # X is going to be the board position
 # y is going to be the evaluation of the board position
@@ -116,8 +119,8 @@ def populate_evaluation_dataset(json_file):
 """ this will be the supervised learning to check the actual evaluation """ 
 
 def evaluation(board, time_limit = 0.01):
-    engine = chess.engine.SimpleEngine.popen_uci("stockfish/stockfish-windows-x86-64-avx2.exe")
-    result = engine.analyse(board, chess.engine.Limit(time = time_limit))
+    engine = chess_game.engine.SimpleEngine.popen_uci("stockfish/stockfish-windows-x86-64-avx2.exe")
+    result = engine.analyse(board, chess_game.engine.Limit(time = time_limit))
     score = result['score'].relative.score()
     if result is not None:
         """ if board.turn == chess.WHITE:
@@ -142,5 +145,27 @@ with open("data/lichess_db_eval.jsonl", 'r') as json_file:
 print(X[8])
 print(y[8])
 print(len(X), len(y))
+
+X = np.array(X)
+y = np.array(y)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+model = Sequential([
+    # relu: rectified Linear unit
+    Dense(32, activation='relu', input_dim=len(X_train)),
+    Dense(64, activation='relu'),
+    # softmax: pick values for each neuron so that all neurons will add up to 1
+    Dense(2, activation='softmax')
+])
+
+# accuracy defines the metrics
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+# epochs: how many times the model will see the information
+model.fit(X_train, y_train, epochs=200, batch_size=32)
+
+test_loss, test_acc = model.evaluate(X_test, y_test)
+print("Test Accuracy: ", test_acc)
+print("Test Loss: ", test_loss)
          
 
