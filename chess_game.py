@@ -1,6 +1,9 @@
 import chess
 import chess.engine
 import numpy as np
+from keras.models import load_model # type: ignore
+
+model = load_model('model.keras')
 
 squares_index = {
     'a': 0,
@@ -20,7 +23,7 @@ def start_game(board):
             player_move(board)
             print(board)
         else:
-            player_move(board)
+            computer_move(board)
             print(board)
 
 def player_move(board):
@@ -35,7 +38,7 @@ def player_move(board):
         print("invalid move")
 
 def computer_move(board):
-    depth = 1
+    depth = 2
     alpha = float("-inf")
     beta = float("inf")
     move, score = miniMax(board, depth, alpha, beta)
@@ -74,19 +77,41 @@ def miniMax(board, depth, alpha, beta):
                 break
         return best_move, min_score
     
-def evaluation(board, time_limit = 0.01):
-    engine = chess.engine.SimpleEngine.popen_uci("stockfish/stockfish-windows-x86-64-avx2.exe")
-    result = engine.analyse(board, chess.engine.Limit(time = time_limit))
-    score = result['score'].relative.score()
-    if board.turn == chess.WHITE:
-        return score
-    else:
-        return -score
+def evaluation(board):
+    matrix = make_matrix(board.fen())
+    score = model.predict(np.array([matrix]))[0][0]
+    return score
 
 def square_to_index(square):
     letter = chess.square_name(square)
     return 8 - int(letter[1]), squares_index[letter[0]]
-#rnbqk1nr/ppp1ppbp/6p1/3p4/3PP3/5N2/PPP2PPP/RNBQKB1R w KQkq d6 0 4
+
+def make_matrix_CNN(fen, best_move):
+    board = chess.Board(fen)
+    board.push_uci(best_move)
+    board3d = np.zeros((14, 8, 8), dtype=np.int8)
+
+    for piece in chess.PIECE_TYPES:
+        for square in board.pieces(piece, chess.WHITE):
+            i = np.unravel_index(square, (8, 8))
+            board3d[piece - 1][7 - i[0]][i[1]] = 1
+        for square in board.pieces(piece, chess.BLACK):
+            i = np.unravel_index(square, (8, 8))
+            board3d[piece + 5][7 - i[0]][i[1]] = 1
+
+    temp = board.turn
+    board.turn = chess.WHITE
+    for move in board.legal_moves:
+        i, j = square_to_index(move.to_square)
+        board3d[12][i][j] = 1
+    board.turn = chess.BLACK
+    for move in board.legal_moves:
+        i, j = square_to_index(move.to_square)
+        board3d[13][i][j] = 1
+    board.turn = temp
+    
+    return board3d
+
 def make_matrix(fen):
     board = chess.Board(fen)
     board3d = np.zeros((14, 8, 8), dtype=np.int8)
@@ -99,7 +124,7 @@ def make_matrix(fen):
             i = np.unravel_index(square, (8, 8))
             board3d[piece + 5][7 - i[0]][i[1]] = 1
 
-    aux = board.turn
+    temp = board.turn
     board.turn = chess.WHITE
     for move in board.legal_moves:
         i, j = square_to_index(move.to_square)
@@ -108,7 +133,7 @@ def make_matrix(fen):
     for move in board.legal_moves:
         i, j = square_to_index(move.to_square)
         board3d[13][i][j] = 1
-    board.turn = aux
+    board.turn = temp
     
     return board3d
     
