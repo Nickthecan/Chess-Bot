@@ -2,6 +2,8 @@ import chess
 import chess.engine
 import numpy as np
 from keras.models import load_model # type: ignore
+import requests
+import time
 
 model = load_model('model.keras')
 
@@ -32,6 +34,7 @@ def player_move(board):
         move = chess.Move.from_uci(player_move)
         if move in board.legal_moves:
             board.push(move)
+            #send_board_to_server(board)
         else:
             print("invalid move")
     except ValueError:
@@ -43,6 +46,7 @@ def computer_move(board):
     beta = float("inf")
     move, score = miniMax(board, depth, alpha, beta)
     board.push(move)
+    #send_board_to_server(board)
     print(score)
 
 def miniMax(board, depth, alpha, beta):
@@ -136,7 +140,17 @@ def make_matrix(fen):
     board.turn = temp
     
     return board3d
+
+def send_board_to_server(board):
+    fen_string = board.fen()
+    data = {"board_position": fen_string}
+    try:
+        requests.post("http://localhost:8080/update_board_position", json=data)
+    except Exception as e:
+        print("Error sending board position to server:", e)
     
-if __name__ == "__main__":
+def main():
     board = chess.Board()
     start_game(board)
+
+main()
