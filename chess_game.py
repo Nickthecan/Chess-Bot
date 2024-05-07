@@ -3,10 +3,11 @@ import chess.engine
 import numpy as np
 from keras.models import load_model # type: ignore
 import requests
-import time
 
-model = load_model('model.keras')
+# load the model
+model = load_model('model2.keras')
 
+# square index to help with the board to 3d matrix conversions
 squares_index = {
     'a': 0,
     'b': 1,
@@ -18,6 +19,7 @@ squares_index = {
     'h': 7,   
 }
 
+# start game function to run the game until checkmate occurs
 def start_game(board):
     print(board)
     while not board.is_game_over():
@@ -28,6 +30,7 @@ def start_game(board):
             computer_move(board)
             print(board)
 
+# allows the player to make a valid move to the chess position
 def player_move(board):
     player_move = input("pick a move (ex: e2e4): ")
     try:
@@ -40,8 +43,10 @@ def player_move(board):
     except ValueError:
         print("invalid move")
 
+# when it is the computer's turn, use the minimax function along with alpha beta pruning in order to calculate the best score
+# from the model
 def computer_move(board):
-    depth = 2
+    depth = 3
     alpha = float("-inf")
     beta = float("inf")
     move, score = miniMax(board, depth, alpha, beta)
@@ -80,16 +85,19 @@ def miniMax(board, depth, alpha, beta):
             if beta <= alpha:
                 break
         return best_move, min_score
-    
+
+# evaluation function that allows the model to predict the evaluation of the board position
 def evaluation(board):
     matrix = make_matrix(board.fen())
     score = model.predict(np.array([matrix]))[0][0]
     return score
 
+# helper function in order to convert boards into 3d matrices
 def square_to_index(square):
     letter = chess.square_name(square)
     return 8 - int(letter[1]), squares_index[letter[0]]
 
+# function used with the CNN in order to convert boards into 3d matrices
 def make_matrix_CNN(fen, best_move):
     board = chess.Board(fen)
     board.push_uci(best_move)
@@ -116,6 +124,7 @@ def make_matrix_CNN(fen, best_move):
     
     return board3d
 
+# function used with the game to convert boards into 3d matrices in order for the model to use
 def make_matrix(fen):
     board = chess.Board(fen)
     board3d = np.zeros((14, 8, 8), dtype=np.int8)
@@ -141,6 +150,7 @@ def make_matrix(fen):
     
     return board3d
 
+# sending board to the front end (not needed)
 def send_board_to_server(board):
     fen_string = board.fen()
     data = {"board_position": fen_string}
@@ -149,8 +159,10 @@ def send_board_to_server(board):
     except Exception as e:
         print("Error sending board position to server:", e)
     
+# main function, initializes a chess board
 def main():
     board = chess.Board()
     start_game(board)
 
-main()
+if __name__ == "__main__":
+    main()
